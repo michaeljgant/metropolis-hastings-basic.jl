@@ -1,5 +1,6 @@
 using Distributions
 using Plots
+using StatsBase
 
 a = 3
 b = 4
@@ -18,6 +19,23 @@ function alpha_prob(ϕ_curr, ϕ_prev,observations)
     return min(cond_prob(ϕ_curr, observations)/cond_prob(ϕ_prev, observations)
         ,1)
 end
+
+function effective_sample_size(x, variance=var(x))
+    N = size(x)[1]
+    τ_inv = 1 + 2 * autocor(x, [1])[1]
+    K = 2
+    while K < N - 2
+        Δ = autocor(x, [K])[1] + autocor(x, [K + 1])[1]
+        if Δ < 0
+            break
+        else
+            τ_inv += 2*Δ
+            K += 2
+        end
+    end
+    return N/τ_inv
+end
+
 
 function mh(m, prior_params)
     a_i = ones(m)
@@ -51,3 +69,5 @@ plot!(collect(0:0.01:1), pdf.(Beta(3,4), collect(0:0.01:1)), linewidth = 2,
 savefig("mh_001.png")
 
 mean(as[10001:end]), mean(bs[10001:end])
+effective_sample_size(as[10001:end])
+effective_sample_size(bs[10001:end])
